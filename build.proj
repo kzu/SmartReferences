@@ -18,8 +18,8 @@
          DefaultTargets="Build"
          xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-	<Import Project="packages\SemanticGit.1.0.0\build\SemanticGit.props" />
-	<Import Project="packages\SemanticGit.Changelog.1.0.0\build\SemanticGit.Changelog.props" />
+	<Import Project="packages\SemanticGit.1.0.1\build\SemanticGit.props" />
+	<Import Project="packages\SemanticGit.Changelog.1.0.1\build\SemanticGit.Changelog.props" />
 
 	<PropertyGroup>
 		<BuildRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), .gitignore))</BuildRoot>
@@ -34,8 +34,8 @@
 	</PropertyGroup>
 
 	<Import Project=".nuget\NuGet.targets" />
-	<Import Project="packages\SemanticGit.1.0.0\build\SemanticGit.targets" />
-	<Import Project="packages\SemanticGit.Changelog.1.0.0\build\SemanticGit.Changelog.targets" />
+	<Import Project="packages\SemanticGit.1.0.1\build\SemanticGit.targets" />
+	<Import Project="packages\SemanticGit.Changelog.1.0.1\build\SemanticGit.Changelog.targets" />
 
 	<ItemGroup>
 		<NuSpec Include="**\*.nuspec" />
