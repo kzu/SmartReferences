@@ -31,6 +31,7 @@
 		<DownloadNuGetExe>true</DownloadNuGetExe>
 		<TargetDir>$(BuildRoot)</TargetDir>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<GitHubUrl>https://github.com/kzu/SmartReferences/</GitHubUrl>
 	</PropertyGroup>
 
 	<Import Project=".nuget\NuGet.targets" />
