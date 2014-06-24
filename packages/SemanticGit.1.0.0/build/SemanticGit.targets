@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2014 Daniel Cazzulino
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup Condition="'$(GenerateAssemblyInfo)' == 'true'">
+		<BuildDependsOn>
+			SemanticGit:GenerateAssemblyInfo;
+			$(BuildDependsOn);
+		</BuildDependsOn>
+
+		<AssemblyInfoFile Condition="'$(AssemblyInfoFile)' == ''">$(IntermediateOutputPath)AssemblyInfo.g$(DefaultLanguageSourceExtension)</AssemblyInfoFile>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<!-- Normalize props -->
+		<GitHubUrl Condition="!$(GitHubUrl.EndsWith('/'))">$(GitHubUrl)/</GitHubUrl>
+		<GitRoot Condition="HasTrailingSlash('$(GitRoot)')">$(GitRoot.TrimEnd('\'))</GitRoot>
+	</PropertyGroup>
+
+	<Import Project="SemanticGit.tasks" />
+
+	<ItemGroup>
+		<_HeadInput Include="$(GitRoot)\.git\HEAD;$(GitRoot)\.git\refs\heads\*.*" />
+	</ItemGroup>
+
+	<Target Name="SemanticGit:GenerateAssemblyInfo" 
+			DependsOnTargets="SemanticGit:FormatVersion;SemanticGit:EnsurePathExists;SemanticGit:GenerateAssemblyInfoCS;SemanticGit:GenerateAssemblyInfoVB">
+
+		<Error Condition="'$(Language)' != 'C#' AND '$(Language)' != 'VB'"
+			   Text="Only C# and VB languages are supported for semantic assembly info generation from Git." />
+
+		<ItemGroup>
+			<Compile Include="$(AssemblyInfoFile)" />
+		</ItemGroup>
+
+		<Message Text="AssemblyInfo: 
+	AssemblyVersion=$(_AssemblyVersion)
+	AssemblyFileVersion=$(_AssemblyFileVersion)
+	AssemblyInformationalVersion=$(_AssemblyInformationalVersion)" Importance="normal" />
+		
+	</Target>
+
+	<Target Name="SemanticGit:EnsurePathExists">
+		<ItemGroup>
+			<_AssemblyInfoFile Include="$(AssemblyInfoFile)" />
+		</ItemGroup>
+
+		<MakeDir Directories="%(_AssemblyInfoFile.RootDir)%(_AssemblyInfoFile.Directory)"
+				 Condition="!Exists('%(_AssemblyInfoFile.RootDir)%(_AssemblyInfoFile.Directory)')" />
+	</Target>
+	
+	<Target Name="SemanticGit:FormatVersion" DependsOnTargets="SemanticGit:GetVersion">
+		<PropertyGroup>
+			<_AssemblyVersion>$(AssemblyVersionFormat.Replace('MAJOR', '$(_Major)').Replace('MINOR', '$(_Minor)').Replace('PATCH', '$(_Patch)'))</_AssemblyVersion>
+			<_AssemblyFileVersion>$(AssemblyFileVersionFormat.Replace('MAJOR', '$(_Major)').Replace('MINOR', '$(_Minor)').Replace('PATCH', '$(_Patch)'))</_AssemblyFileVersion>
+			<_AssemblyInformationalVersion>$(AssemblyInformationalVersionFormat.Replace('MAJOR', '$(_Major)').Replace('MINOR', '$(_Minor)').Replace('PATCH', '$(_Patch)').Replace('-PRERELEASE', '$(_PreRelease)'))</_AssemblyInformationalVersion>
+		</PropertyGroup>
+	</Target>
+
+	<Target Name="SemanticGit:GenerateAssemblyInfoCS"
+			Inputs="@(_HeadInput)"
+			Outputs="$(AssemblyInfoFile)"
+			Condition="'$(Language)' == 'C#'">
+
+		<WriteLinesToFile File='$(AssemblyInfoFile)'
+						  Lines='
+[assembly: System.Reflection.AssemblyVersion("$(_AssemblyVersion)")]
+[assembly: System.Reflection.AssemblyFileVersion("$(_AssemblyFileVersion)")]
+[assembly: System.Reflection.AssemblyInformationalVersion("$(_AssemblyInformationalVersion)")]
+'
+						  Overwrite='true' />
+
+		<ItemGroup>
+			<FileWrites Include="$(AssemblyInfoFile)" />
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="SemanticGit:GenerateAssemblyInfoVB"
+			Inputs="@(_HeadInput)"
+			Outputs="$(AssemblyInfoFile)"
+			Condition="'$(Language)' == 'VB'">
+
+
+		<WriteLinesToFile File='$(AssemblyInfoFile)'
+						  Lines='
+&lt;Assembly: System.Reflection.AssemblyVersion("$(_AssemblyVersion)")&gt;
+&lt;Assembly: System.Reflection.AssemblyFileVersion("$(_AssemblyFileVersion)")&gt;
+&lt;Assembly: System.Reflection.AssemblyInformationalVersion("$(_AssemblyInformationalVersion)")&gt;
+'
+						  Overwrite='true' />
+
+		<ItemGroup>
+			<FileWrites Include="$(AssemblyInfoFile)" />
+		</ItemGroup>
+
+	</Target>
+
+	<Target Name="SemanticGit:GetVersion" DependsOnTargets="SemanticGit:GetHead">
+				
+		<GetSemanticVersion Tag="$(_HeadTag)">
+			<Output TaskParameter="Major" PropertyName="_Major" />
+			<Output TaskParameter="Minor" PropertyName="_Minor" />
+			<Output TaskParameter="Patch" PropertyName="_Patch" />
+			<Output TaskParameter="Commit" PropertyName="_Commit" />
+		</GetSemanticVersion>
+
+		<PropertyGroup>
+			<_PreRelease Condition="'$(_Commit)' != ''">-$(PreReleasePrefix)$(_Commit)</_PreRelease>
+		</PropertyGroup>
+		
+		<Message Text="Determined current semantic version as $(_Major).$(_Minor).$(_Patch)$(_PreRelease)"
+				 Importance="normal" />
+		
+	</Target>
+	
+	<Target Name="SemanticGit:GetHead">
+
+		<Error Condition="!Exists('$(GitRoot)\.git')" Text="Directory '$(GitRoot)' is not a git repository. Directory '.git' not found." />
+
+		<RunGit Exe="$(GitExe)" Args="describe --tags" WorkingDir="$(MSBuildProjectDirectory)">
+			<Output TaskParameter="Output" PropertyName="_HeadTag" />
+		</RunGit>
+		
+	</Target>
+		
+</Project>

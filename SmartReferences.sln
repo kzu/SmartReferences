@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{21D7D044-EFA3-497B-9764-5D6754382D7F}"
+	ProjectSection(SolutionItems) = preProject
+		build.bat = build.bat
+		build.proj = build.proj
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{1869BA0D-B5D4-4569-802B-138982B878A2}"
+	ProjectSection(SolutionItems) = preProject
+		nuget\Clarius.VisualStudio.nuspec = nuget\Clarius.VisualStudio.nuspec
+		nuget\Readme.txt = nuget\Readme.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{1C219DE9-B80B-4D2C-A329-6A15631EB2EC}"
+	ProjectSection(SolutionItems) = preProject
+		nuget\build\Clarius.VisualStudio.props = nuget\build\Clarius.VisualStudio.props
+		nuget\build\Clarius.VisualStudio.targets = nuget\build\Clarius.VisualStudio.targets
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1C219DE9-B80B-4D2C-A329-6A15631EB2EC} = {1869BA0D-B5D4-4569-802B-138982B878A2}
+	EndGlobalSection
+EndGlobal

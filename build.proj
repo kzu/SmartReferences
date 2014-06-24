@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2014 Daniel Cazzulino
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<Project ToolsVersion="4.0"
+         DefaultTargets="Build"
+         xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Import Project="packages\SemanticGit.1.0.0\build\SemanticGit.props" />
+	<Import Project="packages\SemanticGit.Changelog.1.0.0\build\SemanticGit.Changelog.props" />
+
+	<PropertyGroup>
+		<BuildRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), .gitignore))</BuildRoot>
+		<BuildRoot Condition="!HasTrailingSlash('$(BuildRoot)')">$(BuildRoot)\</BuildRoot>
+		<TrackFileAccess>false</TrackFileAccess>
+		<!-- This is used by the package restore -->
+		<SolutionDir>$(BuildRoot)</SolutionDir>
+		<BuildPackage>true</BuildPackage>
+		<DownloadNuGetExe>true</DownloadNuGetExe>
+		<TargetDir>$(BuildRoot)</TargetDir>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+	</PropertyGroup>
+
+	<Import Project=".nuget\NuGet.targets" />
+	<Import Project="packages\SemanticGit.1.0.0\build\SemanticGit.targets" />
+	<Import Project="packages\SemanticGit.Changelog.1.0.0\build\SemanticGit.Changelog.targets" />
+
+	<ItemGroup>
+		<NuSpec Include="**\*.nuspec" />
+	</ItemGroup>
+	
+	<Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
+
+	<!-- Redefined from NuGet.targets since we build differently -->
+	<Target Name="BuildPackage"
+			Inputs="@(NuSpec)"
+			Outputs="%(Identity)-BATCH"
+			DependsOnTargets="CheckPrerequisites;SemanticGit:GetVersion">
+		<PropertyGroup>
+			<ReleaseNotesPath>%(NuSpec.RootDir)%(NuSpec.Directory)ReleaseNotes.txt</ReleaseNotesPath>
+			<ReleaseNotes Condition="Exists('$(ReleaseNotesPath)')">$([System.IO.File]::ReadAllText('$(ReleaseNotesPath)'))</ReleaseNotes>
+		</PropertyGroup>
+
+		<Message Text="Updating %(NuSpec.Filename)%(NuSpec.Extension) release notes from existing file"
+				 Condition="'$(ReleaseNotes)' != ''"
+				 Importance="normal" />
+
+		<XmlPoke XmlInputPath="@(NuSpec)"
+				 Query="/package/metadata/releaseNotes"
+				 Value="$(ReleaseNotes)"
+				 Condition="'$(ReleaseNotes)' != ''" />
+
+		<Exec Command="&quot;$(NuGetCommand)&quot; pack -NoPackageAnalysis &quot;%(NuSpec.FullPath)&quot; -Version &quot;$(_Major).$(_Minor).$(_Patch)$(_PreRelease)&quot;"
+              ContinueOnError="false" />
+
+	</Target>
+
+</Project>

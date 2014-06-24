@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2014 Daniel Cazzulino
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<!--
+    ============================================================
+              ChangeLog Generation
+	
+	GenerateChangeLog: Whether to generate the change log on build. 
+	                   Default: false. 
+	ChangeLog:         Change log file name to generate, relative to
+					   the git repository root. Default: CHANGELOG
+	CommitFormat:      Format string for commit messages.
+	                   Default: - %s
+	GitHubUrl:         Optional GitHub repository base Url that 
+					   will cause the commit messages to be parsed 
+					   for #[issue] and turn them to links in the 
+					   generated $(ChangeLog).md file. i.e. 
+					   https://github.com/kzu/SemanticGit
+    HeadTagText:       Optionally override the head tag text to use
+	                   in the change log, useful when generating 
+					   the changelog for an upcoming release that 
+					   will be named different than the automatically
+					   generated semantic version.
+	
+	============================================================
+	-->
+	<PropertyGroup>
+		<GenerateChangeLog>true</GenerateChangeLog>
+		<ChangeLog>CHANGELOG</ChangeLog>
+		<CommitFormat>- %s</CommitFormat>
+		<HeadTagText></HeadTagText>
+	</PropertyGroup>
+
+	<!--
+    ============================================================
+              GitExe Property
+	
+	Cascading probing mechanism will try to locate an installed 
+	version of git, msysgit or cygwin git.
+	============================================================
+	-->
+	<PropertyGroup>
+		<GitExe>git.exe</GitExe>
+		<GitExe Condition="Exists('C:\Program Files\Git\bin\git.exe')">C:\Program Files\Git\bin\git.exe"</GitExe>
+		<GitExe Condition="Exists('C:\Program Files (x86)\Git\bin\git.exe')">C:\Program Files (x86)\Git\bin\git.exe</GitExe>
+		<GitExe Condition="Exists('C:\msysgit\bin\git.exe')">C:\msysgit\bin\git.exe</GitExe>
+		<GitExe Condition="Exists('C:\cygwin\bin\git.exe')">C:\cygwin\bin\git.exe</GitExe>
+	</PropertyGroup>
+
+	<!--
+    ============================================================
+              GitRoot Property
+	
+	This property determines the root of the git repository which 
+	is used to generate the change log, calculate the current 
+	version, etc. If not specified explicitly, it will try to 
+	determine its value from the location of the .gitignore or 
+	.gitattributes file which can exist alongside this targets 
+	file or in any ancestor path.
+	
+	The property never includes the trailing slash.
+	============================================================
+	-->
+	<PropertyGroup Condition="'$(GitRoot)' == ''">
+		<!-- Try .gitignore first -->
+		<GitRoot Condition="Exists('$(MSBuildThisFileDirectory).gitignore')">$(MSBuildThisFileDirectory)</GitRoot>
+		<GitRoot Condition="'$(GitRoot)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), .gitignore))</GitRoot>
+
+		<!-- Try .gitattributes next -->
+		<GitRoot Condition="'$(GitRoot)' == '' AND Exists('$(MSBuildThisFileDirectory).gitattributes')">$(MSBuildThisFileDirectory)</GitRoot>
+		<GitRoot Condition="'$(GitRoot)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), .gitattributes))</GitRoot>
+	</PropertyGroup>
+
+</Project>
