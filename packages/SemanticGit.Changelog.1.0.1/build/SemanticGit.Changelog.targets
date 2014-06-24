@@ -25,7 +25,7 @@
 
 	<PropertyGroup>
 		<!-- Normalize props -->
-		<GitHubUrl Condition="!$(GitHubUrl.EndsWith('/'))">$(GitHubUrl)/</GitHubUrl>
+		<GitHubUrl Condition="'$(GitHubUrl)' != '' AND !$(GitHubUrl.EndsWith('/'))">$(GitHubUrl)/</GitHubUrl>
 		<GitRoot Condition="HasTrailingSlash('$(GitRoot)')">$(GitRoot.TrimEnd('\'))</GitRoot>
 	</PropertyGroup>
 	

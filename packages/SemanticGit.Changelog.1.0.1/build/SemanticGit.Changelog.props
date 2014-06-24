@@ -21,7 +21,7 @@
               ChangeLog Generation
 	
 	GenerateChangeLog: Whether to generate the change log on build. 
-	                   Default: false. 
+	                   Default: true. 
 	ChangeLog:         Change log file name to generate, relative to
 					   the git repository root. Default: CHANGELOG
 	CommitFormat:      Format string for commit messages.
