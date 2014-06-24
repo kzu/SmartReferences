@@ -70,7 +70,7 @@
 
 		<WriteLinesToFile File="$(GitRoot)\$(ChangeLog).md"
 						  Condition="'%(_Tags.Identity)' != ''"
-						  Lines="## [%(_Tags.Title)]($(GitHubUrl)/releases/tag/%(_Tags.Title))
+						  Lines="## [%(_Tags.Title)]($(GitHubUrl)releases/tag/%(_Tags.Title))
 %(_Tags.LinkedCommits)%0a" />
 
 		<Message Text="Generated $(ChangeLog).md GitHub linked markdown file for repository base url $(GitHubUrl)." Importance="normal" />
