@@ -22,7 +22,7 @@
 		<!-- I -->
 		<!-- $(_ProjectReferencePath) is the file received to 'inherit' from when processing project references, 
 		     and is passed by this same targets file when invoking itself via MSBuild. -->
-		<_ProcessReferences Condition="'$(_ProjectReferencePath)' == '' AND '$(SolutionPath)' != ''">true</_ProcessReferences>
+		<_ProcessReferences Condition="'$(_ProjectReferencePath)' == '' AND '$(SolutionPath)' != '' AND '@(ProjectReference)' != ''">true</_ProcessReferences>
 		<_SolutionProject Condition="'$(SolutionPath)' != ''">$([System.IO.Path]::ChangeExtension('$(SolutionPath)', 'tmp'))</_SolutionProject>
 	</PropertyGroup>
 
