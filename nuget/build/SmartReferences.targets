@@ -59,7 +59,7 @@
 	</PropertyGroup>
 
 	<Target Name="BeforeResolveReferences"
-			Condition="$(_ProcessReferences) == 'true'"
+			Condition="$(_ProcessReferences) == 'true' AND '@(ProjectReference)' != ''"
 			DependsOnTargets="$(BeforeResolveReferencesDependsOn)" />
 
 	<!--
@@ -84,6 +84,7 @@
 	============================================================
 	-->
 	<Target Name="SmartReferences:AddIndirectDependencies"
+			Condition="'@(ProjectReference)' != ''"
 			AfterTargets="ResolveAssemblyReferences">
 		<ItemGroup>
 			<ReferencePath Include="@(ReferenceDependencyPaths)" />
@@ -91,7 +92,8 @@
 		</ItemGroup>
 	</Target>
 
-	<Target Name="SmartReferences:ReportActions">
+	<Target Name="SmartReferences:ReportActions"
+			Condition="'@(ProjectReference)' != ''">
 
 		<Message Importance="normal" Text="Removed project reference: %(_ExternalProject.OriginalIdentity)" />
 		<Message Importance="normal" Text="Added assembly reference:  %(_ExternalReference.Identity)" />
@@ -114,6 +116,7 @@
     ============================================================
 	-->
 	<Target Name="SmartReferences:CompileExternalProjects"
+			Condition="'@(_ExternalProject)' != ''"
 			Inputs="@(_ExternalProject)"
 			Outputs="@(_ExternalProject -> '%(TargetPath)')">
 		<!-- NOTE: we pass on our own configuration, but let the platform unspecified on 
@@ -172,6 +175,7 @@
     =====================================================================
 	-->
 	<Target Name="SmartReferences:GetExternalProjectMetadata"
+			Condition="'@(_ExternalProject)' != ''"
 			Inputs="@(_ExternalProject)"
 			Outputs="%(Identity)-BATCH">
 
@@ -233,6 +237,7 @@
     ============================================================
 	-->
 	<Target Name="SmartReferences:GenerateSolutionProject"
+			Condition="'@(ProjectReference)' != ''"
 			Inputs="$(SolutionPath)"
 			Outputs="$(_SolutionProject)">
 
@@ -255,7 +260,8 @@
 	we know also what projects to remove.
     =================================================================
 	-->
-	<Target Name="SmartReferences:GetExternalProjects">
+	<Target Name="SmartReferences:GetExternalProjects"
+			Condition="'@(ProjectReference)' != ''">
 
 		<MSBuild Projects="$(MSBuildThisFileFullPath)"
 				 Properties="_SolutionProject=$(_SolutionProject);LoadSolutionProject=true"
