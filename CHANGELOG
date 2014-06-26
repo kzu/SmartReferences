@@ -1,3 +1,6 @@
+v0.8.4
+- Avoid adding duplicate indirect references, and VS Shell assemblies
+
 v0.8.3
 - Fix error when current project has no project references
 

@@ -22,7 +22,7 @@
 		<!-- I -->
 		<!-- $(_ProjectReferencePath) is the file received to 'inherit' from when processing project references, 
 		     and is passed by this same targets file when invoking itself via MSBuild. -->
-		<_ProcessReferences Condition="'$(_ProjectReferencePath)' == '' AND '$(SolutionPath)' != ''">true</_ProcessReferences>
+		<_ProcessReferences Condition="'$(_ProjectReferencePath)' == '' AND '$(SolutionPath)' != '' AND '$(SolutionPath)' != '*Undefined*'">true</_ProcessReferences>
 		<_SolutionProject Condition="'$(SolutionPath)' != ''">$([System.IO.Path]::ChangeExtension('$(SolutionPath)', 'tmp'))</_SolutionProject>
 	</PropertyGroup>
 
@@ -56,7 +56,24 @@
 			SmartReferences:ReportActions;
 			$(BeforeResolveReferencesDependsOn);
 		</BeforeResolveReferencesDependsOn>
+		<ResolveReferencesDependsOn>
+			$(ResolveReferencesDependsOn);
+			SmartReferences:AddIndirectDependencies;
+		</ResolveReferencesDependsOn>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- These assemblies are "special" in that the types are duplicated in 
+			 all these files and binding redirects in VS point to the latest 
+			 version. The implementation of proper support for this would be
+			 too complex to be worth it, for now. -->
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.9.0" />
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.10.0" />
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.11.0" />
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.12.0" />
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.13.0" />
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.14.0" />
+	</ItemGroup>
 
 	<Target Name="BeforeResolveReferences"
 			Condition="$(_ProcessReferences) == 'true' AND '@(ProjectReference)' != ''"
@@ -83,13 +100,26 @@
 	intact.	
 	============================================================
 	-->
-	<Target Name="SmartReferences:AddIndirectDependencies"
-			Condition="'@(ProjectReference)' != ''"
-			AfterTargets="ResolveAssemblyReferences">
+	<Target Name="SmartReferences:AddIndirectDependencies">
+
+		<PropertyGroup>
+			<_ReferencedFusionNames>@(ReferencePath -> '%(FusionName)')</_ReferencedFusionNames>
+			<_IgnoredIndirectDependencies>@(_IgnoredIndirectDependency)</_IgnoredIndirectDependencies>
+		</PropertyGroup>
+
+		<CreateItem Include="@(ReferenceDependencyPaths)"
+					PreserveExistingMetadata="true"
+					Condition="%(Identity) != '' AND !$(_ReferencedFusionNames.Contains('%(FusionName)')) AND !$(_IgnoredIndirectDependencies.Contains('%(Filename)'))">
+			<Output ItemName="_AdditionalIndirectDependency" TaskParameter="Include" />
+		</CreateItem>
+
 		<ItemGroup>
-			<ReferencePath Include="@(ReferenceDependencyPaths)" />
-			<ReferenceDependencyPaths Remove="@(ReferencePath)" />
+			<ReferencePath Include="@(_AdditionalIndirectDependency)" />
+			<ReferenceDependencyPaths Remove="@(_AdditionalIndirectDependency)" />
 		</ItemGroup>
+
+		<DumpItems Message="SmartReferences:_AdditionalIndirectDependency" Items="@(_AdditionalIndirectDependency)" />
+
 	</Target>
 
 	<Target Name="SmartReferences:ReportActions"
@@ -99,6 +129,33 @@
 		<Message Importance="normal" Text="Added assembly reference:  %(_ExternalReference.Identity)" />
 
 	</Target>
+
+	<UsingTask TaskName="DumpItems"
+			   TaskFactory="CodeTaskFactory"
+			   AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v$(MSBuildToolsVersion).dll">
+		<ParameterGroup>
+			<Message />
+			<Items ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+		</ParameterGroup>
+		<Task>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+			
+			if (!string.IsNullOrEmpty(Message))
+				Log.LogMessage(Message);
+			
+			foreach (var item in Items)
+			{
+				Log.LogMessage("Item: {0}", item.ItemSpec);
+				foreach (var name in item.MetadataNames.OfType<string>())
+				{
+					Log.LogMessage("\t{0}={1}", name, item.GetMetadata(name));
+				}
+			}
+]]>
+			</Code>
+		</Task>
+	</UsingTask>
 
 	<!--
     ============================================================
@@ -319,7 +376,10 @@
 				<![CDATA[
 			if (File.Exists(TargetFile))
 				File.Delete(TargetFile);
-
+	
+			Log.LogMessage("SolutionPath: {0}", SolutionPath);
+			Log.LogMessage("TargetFile: {0}", TargetFile);			
+	
 			File.WriteAllLines(TargetFile,
 				SolutionWrapperProject
 					.Generate(SolutionPath, null, new BuildEventContext(0, 0, 0, 0))
