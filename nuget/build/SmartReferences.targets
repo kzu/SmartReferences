@@ -63,16 +63,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<!-- These assemblies are "special" in that the types are duplicated in 
-			 all these files and binding redirects in VS point to the latest 
-			 version. The implementation of proper support for this would be
-			 too complex to be worth it, for now. -->
-		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.9.0" />
-		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.10.0" />
-		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.11.0" />
-		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.12.0" />
-		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.13.0" />
-		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Shell.14.0" />
+		<!-- We process these files and only keep the one with the biggest version -->
+		<_FileVersionedAssembly Include="Microsoft.VisualStudio.Shell" />
+		<!-- The Settings file in particular is problematic, since its types are 
+			 included in both Settings and Shell, so we must skip it -->
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Settings" />
 	</ItemGroup>
 
 	<Target Name="BeforeResolveReferences"
@@ -103,13 +98,12 @@
 	<Target Name="SmartReferences:AddIndirectDependencies">
 
 		<PropertyGroup>
-			<_ReferencedFusionNames>@(ReferencePath -> '%(FusionName)')</_ReferencedFusionNames>
-			<_IgnoredIndirectDependencies>@(_IgnoredIndirectDependency)</_IgnoredIndirectDependencies>
+			<_IgnoredIndirectDependencies>@(ReferencePath -> '%(Filename)');@(_IgnoredIndirectDependency)</_IgnoredIndirectDependencies>
 		</PropertyGroup>
 
 		<CreateItem Include="@(ReferenceDependencyPaths)"
 					PreserveExistingMetadata="true"
-					Condition="%(Identity) != '' AND !$(_ReferencedFusionNames.Contains('%(FusionName)')) AND !$(_IgnoredIndirectDependencies.Contains('%(Filename)'))">
+					Condition="%(Identity) != '' AND !$(_IgnoredIndirectDependencies.Contains('%(Filename)'))">
 			<Output ItemName="_AdditionalIndirectDependency" TaskParameter="Include" />
 		</CreateItem>
 
@@ -118,7 +112,13 @@
 			<ReferenceDependencyPaths Remove="@(_AdditionalIndirectDependency)" />
 		</ItemGroup>
 
-		<DumpItems Message="SmartReferences:_AdditionalIndirectDependency" Items="@(_AdditionalIndirectDependency)" />
+		<GetVersionedAssemblyToRemove VersionedAssemblies="@(_FileVersionedAssembly)" ReferencePaths="@(ReferencePath)">
+			<Output ItemName="_VersionedAssemblyToRemove" TaskParameter="ReferencesToRemove" />
+		</GetVersionedAssemblyToRemove>
+
+		<ItemGroup>
+			<ReferencePath Remove="@(_VersionedAssemblyToRemove)" />
+		</ItemGroup>
 
 	</Target>
 
@@ -129,33 +129,6 @@
 		<Message Importance="normal" Text="Added assembly reference:  %(_ExternalReference.Identity)" />
 
 	</Target>
-
-	<UsingTask TaskName="DumpItems"
-			   TaskFactory="CodeTaskFactory"
-			   AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v$(MSBuildToolsVersion).dll">
-		<ParameterGroup>
-			<Message />
-			<Items ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-		</ParameterGroup>
-		<Task>
-			<Code Type="Fragment" Language="cs">
-				<![CDATA[
-			
-			if (!string.IsNullOrEmpty(Message))
-				Log.LogMessage(Message);
-			
-			foreach (var item in Items)
-			{
-				Log.LogMessage("Item: {0}", item.ItemSpec);
-				foreach (var name in item.MetadataNames.OfType<string>())
-				{
-					Log.LogMessage("\t{0}={1}", name, item.GetMetadata(name));
-				}
-			}
-]]>
-			</Code>
-		</Task>
-	</UsingTask>
 
 	<!--
     ============================================================
@@ -392,6 +365,60 @@
 ]]>
 			</Code>
 		</Task>
+	</UsingTask>
+
+	<UsingTask
+		TaskName="GetVersionedAssemblyToRemove"
+		TaskFactory="CodeTaskFactory"
+		AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v$(MSBuildToolsVersion).dll">
+
+		<ParameterGroup>
+			<VersionedAssemblies ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+			<ReferencePaths ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+			<ReferencesToRemove ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
+		</ParameterGroup>
+
+		<Task>
+			<Using Namespace="System"/>
+			<Using Namespace="System.Collections.Generic"/>
+			<Using Namespace="System.Linq"/>
+			<Using Namespace="System.Text.RegularExpressions"/>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+			
+			var toRemove = new List<Microsoft.Build.Framework.ITaskItem>();
+			
+			foreach (var versionedAssembly in VersionedAssemblies)
+			{
+				Log.LogMessage("Versioned assembly to process: {0}", versionedAssembly);
+				
+				var assemblyVersion = new Regex(
+					string.Format(@"{0}.(?<Major>\d+)\.(?<Minor>\d+)$", versionedAssembly.ItemSpec),
+					RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+				
+				toRemove.AddRange(ReferencePaths
+					.Select(r => new
+					{
+						Reference = r,
+						Match = assemblyVersion.Match(r.GetMetadata("Filename"))
+					})
+					.Where(x => x.Match.Success)
+					.Select(x => new
+					{
+						Reference = x.Reference,
+						Version = new Version(x.Match.Groups["Major"].Value + "." + x.Match.Groups["Minor"].Value)
+					})
+					.OrderByDescending(x => x.Version)
+					// We keep the greatest version
+					.Skip(1)
+					.Select(x => x.Reference));
+			}
+			
+			ReferencesToRemove = toRemove.ToArray();
+]]>
+			</Code>
+		</Task>
+
 	</UsingTask>
 
 </Project>

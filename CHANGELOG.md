@@ -1,3 +1,6 @@
+## [v0.8.5](https://github.com/kzu/SmartReferences/releases/tag/v0.8.5)
+- Added special provision for VS Settings assembly
+
 ## [v0.8.4](https://github.com/kzu/SmartReferences/releases/tag/v0.8.4)
 - Avoid adding duplicate indirect references, and VS Shell assemblies
 
