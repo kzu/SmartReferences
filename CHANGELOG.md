@@ -1,3 +1,6 @@
+## [v0.8.6](https://github.com/kzu/SmartReferences/releases/tag/v0.8.6)
+- Added support for xbuild by provinding compiled tasks too.
+
 ## [v0.8.5](https://github.com/kzu/SmartReferences/releases/tag/v0.8.5)
 - Added special provision for VS Settings assembly
 
