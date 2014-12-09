@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Copyright 2014 Daniel Cazzulino
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<CodeTaskAssembly>$(MSBuildToolsPath)\Microsoft.Build.Tasks.v$(MSBuildToolsVersion).dll</CodeTaskAssembly>
+		<!-- In VS2013, the assembly contains the VS version. -->
+		<CodeTaskAssembly Condition="!Exists('$(CodeTaskAssembly)')">$(MSBuildToolsPath)\Microsoft.Build.Tasks.v$(VisualStudioVersion).dll</CodeTaskAssembly>
+		<!-- In VS2014+, the assembly was renamed. -->
+		<CodeTaskAssembly Condition="!Exists('$(CodeTaskAssembly)')">$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll</CodeTaskAssembly>
+	</PropertyGroup>
+
+	<!--
+    =================================================================
+                 GenerateSolutionProject
+				 
+	Invokes the built-in MSBuild solution generator that converts 
+	an SLN into an MSBuild project that we can work on.
+    =================================================================
+	-->
+	<UsingTask TaskName="GenerateSolutionProject" TaskFactory="CodeTaskFactory" AssemblyFile="$(CodeTaskAssembly)">
+		<ParameterGroup>
+			<SolutionPath Required="true" />
+			<TargetFile Required="true" />
+		</ParameterGroup>
+		<Task>
+			<Reference Include="Microsoft.Build.Engine" />
+			<Using Namespace="System.IO" />
+			<Using Namespace="System.Linq" />
+			<Using Namespace="System.Text" />
+			<Using Namespace="Microsoft.Build.BuildEngine" />
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+			if (File.Exists(TargetFile))
+				File.Delete(TargetFile);
+	
+			Log.LogMessage("SolutionPath: {0}", SolutionPath);
+			Log.LogMessage("TargetFile: {0}", TargetFile);			
+	
+			File.WriteAllLines(TargetFile,
+				SolutionWrapperProject
+					.Generate(SolutionPath, null, new BuildEventContext(0, 0, 0, 0))
+					// First line contains the XML encoding, and I couldn't get it right.
+					.Split(new [] { Environment.NewLine }, StringSplitOptions.None)
+					.Skip(1), 
+				Encoding.Default);
+
+			new FileInfo(TargetFile).Attributes = FileAttributes.Hidden;
+]]>
+			</Code>
+		</Task>
+	</UsingTask>
+
+	<UsingTask TaskName="GetVersionedAssemblyToRemove" TaskFactory="CodeTaskFactory" AssemblyFile="$(CodeTaskAssembly)">
+
+		<ParameterGroup>
+			<VersionedAssemblies ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+			<ReferencePaths ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+			<ReferencesToRemove ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
+		</ParameterGroup>
+
+		<Task>
+			<Using Namespace="System"/>
+			<Using Namespace="System.Collections.Generic"/>
+			<Using Namespace="System.Linq"/>
+			<Using Namespace="System.Text.RegularExpressions"/>
+			<Code Type="Fragment" Language="cs">
+				<![CDATA[
+			
+			var toRemove = new List<Microsoft.Build.Framework.ITaskItem>();
+			
+			foreach (var versionedAssembly in VersionedAssemblies)
+			{
+				Log.LogMessage("Versioned assembly to process: {0}", versionedAssembly);
+				
+				var assemblyVersion = new Regex(
+					string.Format(@"{0}.(?<Major>\d+)\.(?<Minor>\d+)$", versionedAssembly.ItemSpec),
+					RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ExplicitCapture);
+				
+				toRemove.AddRange(ReferencePaths
+					.Select(r => new
+					{
+						Reference = r,
+						Match = assemblyVersion.Match(r.GetMetadata("Filename"))
+					})
+					.Where(x => x.Match.Success)
+					.Select(x => new
+					{
+						Reference = x.Reference,
+						Version = new Version(x.Match.Groups["Major"].Value + "." + x.Match.Groups["Minor"].Value)
+					})
+					.OrderByDescending(x => x.Version)
+					// We keep the greatest version
+					.Skip(1)
+					.Select(x => x.Reference));
+			}
+			
+			ReferencesToRemove = toRemove.ToArray();
+]]>
+			</Code>
+		</Task>
+
+	</UsingTask>
+
+</Project>

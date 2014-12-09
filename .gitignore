@@ -1,3 +1,9 @@
 /.nuget
 *.nupkg
-/*.suo
+*.suo
+*.user
+bin
+obj
+packages
+/nuget/build/*.dll
+/nuget/build/*.pdb
