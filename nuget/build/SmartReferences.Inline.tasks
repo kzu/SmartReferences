@@ -66,13 +66,11 @@
 	</UsingTask>
 
 	<UsingTask TaskName="GetVersionedAssemblyToRemove" TaskFactory="CodeTaskFactory" AssemblyFile="$(CodeTaskAssembly)">
-
 		<ParameterGroup>
 			<VersionedAssemblies ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
 			<ReferencePaths ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
 			<ReferencesToRemove ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
 		</ParameterGroup>
-
 		<Task>
 			<Using Namespace="System"/>
 			<Using Namespace="System.Collections.Generic"/>

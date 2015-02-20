@@ -152,7 +152,7 @@
 		<!-- NOTE: we pass on our own configuration, but let the platform unspecified on 
 			 purpose, since we typically want the default platform of the referenced project 
 			 to be built.
-			 TODO: if this heuristic proves problematic, we might allow metadata at the <ProjectReference
+			 TODO: if this heuristic proves problematic, we might allow metadata at the <ProjectReference>
 			 level to drive that (since we won't have solution configurations to do so).
 		-->
 		<MSBuild Projects="%(_ExternalProject.FullPath)"
