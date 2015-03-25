@@ -111,7 +111,7 @@
 		</ReadLinesFromFile>
 
 		<PropertyGroup>
-			<_IgnoredIndirectDependencies>@(ReferencePath -> '%(Filename)');@(_IgnoredIndirectDependency)</_IgnoredIndirectDependencies>
+			<_IgnoredIndirectDependencies>@(ReferencePath -> '%(Filename)');@(_IgnoredIndirectDependency);@(_IgnoreAssemblies)</_IgnoredIndirectDependencies>
 		</PropertyGroup>
 
 		<CreateItem Include="@(ReferenceDependencyPaths)"
