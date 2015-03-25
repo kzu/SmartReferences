@@ -23,6 +23,11 @@
 		<!-- $(_ProjectReferencePath) is the file received to 'inherit' from when processing project references, 
 		     and is passed by this same targets file when invoking itself via MSBuild. -->
 		<_ProcessReferences Condition="'$(_ProjectReferencePath)' == '' AND '$(SolutionPath)' != '' AND '$(SolutionPath)' != '*Undefined*'">true</_ProcessReferences>
+		<_SmartReferencesFolder>.SmartReferences</_SmartReferencesFolder>
+		<_SolutionFolderPath>$([System.IO.Path]::GetDirectoryName('$(SolutionPath)'))</_SolutionFolderPath>
+		<_SolutionFolderPath>$([System.IO.Path]::Combine('$(_SolutionFolderPath)', '$(_SmartReferencesFolder)'))</_SolutionFolderPath>
+		<_SolutionProjectFileName>$([System.IO.Path]::GetFileName('$(SolutionPath)'))</_SolutionProjectFileName>
+		<_SolutionProjectFileName>$([System.IO.Path]::ChangeExtension('$(_SolutionProjectFileName)', '.tmp'))</_SolutionProjectFileName>
 		<_SolutionProject Condition="'$(SolutionPath)' != ''">$([System.IO.Path]::ChangeExtension('$(SolutionPath)', 'tmp'))</_SolutionProject>
 	</PropertyGroup>
 
