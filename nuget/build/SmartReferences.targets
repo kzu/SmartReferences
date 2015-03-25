@@ -16,330 +16,318 @@
 -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-    <PropertyGroup>
-        <_ProcessReferences>false</_ProcessReferences>
-        <!-- $(SolutionPath) always has a value when building solutions, either from VS or MSBuild -->
-        <!-- I -->
-        <!-- $(_ProjectReferencePath) is the file received to 'inherit' from when processing project references, 
-             and is passed by this same targets file when invoking itself via MSBuild. -->
-        <_ProcessReferences Condition="'$(_ProjectReferencePath)' == '' AND '$(SolutionPath)' != '' AND '$(SolutionPath)' != '*Undefined*'">true</_ProcessReferences>
-        <_SmartReferencesFolder>.SmartReferences</_SmartReferencesFolder>
-        <_SolutionFolderPath>$([System.IO.Path]::GetDirectoryName('$(SolutionPath)'))</_SolutionFolderPath>
-        <_SolutionFolderPath>$([System.IO.Path]::Combine('$(_SolutionFolderPath)', '$(_SmartReferencesFolder)'))</_SolutionFolderPath>
-        <_SolutionProjectFileName>$([System.IO.Path]::GetFileName('$(SolutionPath)'))</_SolutionProjectFileName>
-        <_SolutionProjectFileName>$([System.IO.Path]::ChangeExtension('$(_SolutionProjectFileName)', '.tmp'))</_SolutionProjectFileName>
-        <_SolutionProject Condition="'$(SolutionPath)' != ''">$([System.IO.Path]::ChangeExtension('$(SolutionPath)', 'tmp'))</_SolutionProject>
-    </PropertyGroup>
+	<PropertyGroup>
+		<_ProcessReferences>false</_ProcessReferences>
+		<!-- $(SolutionPath) always has a value when building solutions, either from VS or MSBuild -->
+		<!-- I -->
+		<!-- $(_ProjectReferencePath) is the file received to 'inherit' from when processing project references, 
+		     and is passed by this same targets file when invoking itself via MSBuild. -->
+		<_ProcessReferences Condition="'$(_ProjectReferencePath)' == '' AND '$(SolutionPath)' != '' AND '$(SolutionPath)' != '*Undefined*'">true</_ProcessReferences>
+		<_SmartReferencesFolder>.SmartReferences</_SmartReferencesFolder>
+		<_SolutionFolderPath>$([System.IO.Path]::GetDirectoryName('$(SolutionPath)'))</_SolutionFolderPath>
+		<_SolutionFolderPath>$([System.IO.Path]::Combine('$(_SolutionFolderPath)', '$(_SmartReferencesFolder)'))</_SolutionFolderPath>
+		<_SolutionProjectFileName>$([System.IO.Path]::GetFileName('$(SolutionPath)'))</_SolutionProjectFileName>
+		<_SolutionProjectFileName>$([System.IO.Path]::ChangeExtension('$(_SolutionProjectFileName)', '.tmp'))</_SolutionProjectFileName>
+		<_SolutionProject Condition="'$(SolutionPath)' != ''">$([System.IO.Path]::ChangeExtension('$(SolutionPath)', 'tmp'))</_SolutionProject>
+	</PropertyGroup>
 
-    <!--
+	<!--
     ============================================================
               BeforeResolveReferences
-              
-    This target is just like BeforeBuild, it's declared empty in 
-    the common targets .
-    
-    We depend on users NOT overriding it, but it's probably safe 
-    to say nobody knows it even exists :).
+			  
+	This target is just like BeforeBuild, it's declared empty in 
+	the common targets .
+	
+	We depend on users NOT overriding it, but it's probably safe 
+	to say nobody knows it even exists :).
 
-    We need the same condition in the target as on the PropertyGroup 
-    since this target is called by the Commons targets without 
-    checking for the depends on.
-    
-    We'll only add our targets if _ProcessReferences is true, 
-    which only happens if there is an existing solution being built, 
-    and we're not processing an external project reference.
-    ============================================================
-    -->
-    <PropertyGroup Condition="$(_ProcessReferences) == 'true'">
-        <BeforeResolveReferencesDependsOn>
-            SmartReferences:GenerateSolutionProject;
-            SmartReferences:GetExternalProjects;
-            SmartReferences:FailIfExternalProjectMissing;
-            SmartReferences:GetExternalProjectMetadata;
-            SmartReferences:CompileExternalProjects;
-            SmartReferences:FixupProjectReferences;
-            SmartReferences:ReportActions;
-            $(BeforeResolveReferencesDependsOn);
-        </BeforeResolveReferencesDependsOn>
-        <ResolveReferencesDependsOn>
-            $(ResolveReferencesDependsOn);
-            SmartReferences:AddIndirectDependencies;
-        </ResolveReferencesDependsOn>
-    </PropertyGroup>
+	We need the same condition in the target as on the PropertyGroup 
+	since this target is called by the Commons targets without 
+	checking for the depends on.
+	
+	We'll only add our targets if _ProcessReferences is true, 
+	which only happens if there is an existing solution being built, 
+	and we're not processing an external project reference.
+	============================================================
+	-->
+	<PropertyGroup Condition="$(_ProcessReferences) == 'true'">
+		<BeforeResolveReferencesDependsOn>
+			SmartReferences:GenerateSolutionProject;
+			SmartReferences:GetExternalProjects;
+			SmartReferences:FailIfExternalProjectMissing;
+			SmartReferences:GetExternalProjectMetadata;
+			SmartReferences:CompileExternalProjects;
+			SmartReferences:FixupProjectReferences;
+			SmartReferences:ReportActions;
+			$(BeforeResolveReferencesDependsOn);
+		</BeforeResolveReferencesDependsOn>
+		<ResolveReferencesDependsOn>
+			$(ResolveReferencesDependsOn);
+			SmartReferences:AddIndirectDependencies;
+		</ResolveReferencesDependsOn>
+	</PropertyGroup>
 
-    <ItemGroup>
-        <!-- We process these files and only keep the one with the biggest version -->
-        <_FileVersionedAssembly Include="Microsoft.VisualStudio.Shell" />
-        <!-- The Settings file in particular is problematic, since its types are 
-             included in both Settings and Shell, so we must skip it -->
-        <_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Settings" />
-    </ItemGroup>
+	<ItemGroup>
+		<!-- We process these files and only keep the one with the biggest version -->
+		<_FileVersionedAssembly Include="Microsoft.VisualStudio.Shell" />
+		<!-- The Settings file in particular is problematic, since its types are 
+			 included in both Settings and Shell, so we must skip it -->
+		<_IgnoredIndirectDependency Include="Microsoft.VisualStudio.Settings" />
+	</ItemGroup>
 
-    <Target Name="BeforeResolveReferences"
-            Condition="$(_ProcessReferences) == 'true' AND '@(ProjectReference)' != ''"
-            DependsOnTargets="$(BeforeResolveReferencesDependsOn)" />
+	<Target Name="BeforeResolveReferences"
+			Condition="$(_ProcessReferences) == 'true' AND '@(ProjectReference)' != ''"
+			DependsOnTargets="$(BeforeResolveReferencesDependsOn)" />
 
-    <!--
+	<!--
     ============================================================
               AddIndirectDependencies
-              
-    Before compilation the ResolveAssemblyReferences target in 
-    Common does extensive analysis of the references, their 
-    indirect dependencies, presence in the GAC and whether they
-    should be copied locally, etc.
-    
-    The generated @(ReferenceDependencyPaths) contains the 
-    indirect references that were detected, which are used on 
-    some manifest and license files generation, appended to the 
-    @(ReferencePath) list, which are the explicitly referenced 
-    dependencies. 
-    
-    Since the @(ReferenceDependencyPaths) is not passed to the 
-    Csc task, we just move the items from that list to 
-    @(ReferencePath), which should leave all other behaviors 
-    intact.	
-    ============================================================
-    -->
-    <Target Name="SmartReferences:AddIndirectDependencies">
+			  
+	Before compilation the ResolveAssemblyReferences target in 
+	Common does extensive analysis of the references, their 
+	indirect dependencies, presence in the GAC and whether they
+	should be copied locally, etc.
+	
+	The generated @(ReferenceDependencyPaths) contains the 
+	indirect references that were detected, which are used on 
+	some manifest and license files generation, appended to the 
+	@(ReferencePath) list, which are the explicitly referenced 
+	dependencies. 
+	
+	Since the @(ReferenceDependencyPaths) is not passed to the 
+	Csc task, we just move the items from that list to 
+	@(ReferencePath), which should leave all other behaviors 
+	intact.	
+	============================================================
+	-->
+	<Target Name="SmartReferences:AddIndirectDependencies">
 
-        <PropertyGroup>
-            <_IgnoredIndirectDependencies>@(ReferencePath -> '%(Filename)');@(_IgnoredIndirectDependency)</_IgnoredIndirectDependencies>
-        </PropertyGroup>
+		<PropertyGroup>
+			<_IgnoredIndirectDependencies>@(ReferencePath -> '%(Filename)');@(_IgnoredIndirectDependency)</_IgnoredIndirectDependencies>
+		</PropertyGroup>
 
-        <!-- Make sure base directory is created to store all SmartReferences files: -->
-        <MakeDir Directories="$(_SolutionFolderPath)" Condition="!Exists($(_SolutionFolderPath))" />
-        
-        <!-- Get all assemblies to ignore from disk, if it exists: -->
-        <ReadLinesFromFile File="$(_SolutionFolderPath)\IgnoreAssemblies.txt" Condition="Exists('$(_SolutionFolderPath)\IgnoreAssemblies.txt')">
-            <Output TaskParameter="Lines" ItemName="_IgnoreAssemblies" />
-        </ReadLinesFromFile>
-        
-        <PropertyGroup>
-            <_IgnoredIndirectDependencies>@(ReferencePath -> '%(Filename)');@(_IgnoredIndirectDependency);@(_IgnoreAssemblies)</_IgnoredIndirectDependencies>
-        </PropertyGroup>
-        
-        <CreateItem Include="@(ReferenceDependencyPaths)"
-                    PreserveExistingMetadata="true"
-                    Condition="%(Identity) != '' AND !$(_IgnoredIndirectDependencies.Contains('%(Filename)'))">
-            <Output ItemName="_AdditionalIndirectDependency" TaskParameter="Include" />
-        </CreateItem>
+		<CreateItem Include="@(ReferenceDependencyPaths)"
+					PreserveExistingMetadata="true"
+					Condition="%(Identity) != '' AND !$(_IgnoredIndirectDependencies.Contains('%(Filename)'))">
+			<Output ItemName="_AdditionalIndirectDependency" TaskParameter="Include" />
+		</CreateItem>
 
-        <ItemGroup>
-            <ReferencePath Include="@(_AdditionalIndirectDependency)" />
-            <ReferenceDependencyPaths Remove="@(_AdditionalIndirectDependency)" />
-        </ItemGroup>
+		<ItemGroup>
+			<ReferencePath Include="@(_AdditionalIndirectDependency)" />
+			<ReferenceDependencyPaths Remove="@(_AdditionalIndirectDependency)" />
+		</ItemGroup>
 
-        <GetVersionedAssemblyToRemove VersionedAssemblies="@(_FileVersionedAssembly)" ReferencePaths="@(ReferencePath)">
-            <Output ItemName="_VersionedAssemblyToRemove" TaskParameter="ReferencesToRemove" />
-        </GetVersionedAssemblyToRemove>
+		<GetVersionedAssemblyToRemove VersionedAssemblies="@(_FileVersionedAssembly)" ReferencePaths="@(ReferencePath)">
+			<Output ItemName="_VersionedAssemblyToRemove" TaskParameter="ReferencesToRemove" />
+		</GetVersionedAssemblyToRemove>
 
-        <ItemGroup>
-            <ReferencePath Remove="@(_VersionedAssemblyToRemove)" />
-        </ItemGroup>
+		<ItemGroup>
+			<ReferencePath Remove="@(_VersionedAssemblyToRemove)" />
+		</ItemGroup>
 
-    </Target>
+	</Target>
 
-    <Target Name="SmartReferences:ReportActions"
-            Condition="'@(ProjectReference)' != ''">
+	<Target Name="SmartReferences:ReportActions"
+			Condition="'@(ProjectReference)' != ''">
 
-        <Message Importance="normal" Text="Removed project reference: %(_ExternalProject.OriginalIdentity)" />
-        <Message Importance="normal" Text="Added assembly reference:  %(_ExternalReference.Identity)" />
+		<Message Importance="normal" Text="Removed project reference: %(_ExternalProject.OriginalIdentity)" />
+		<Message Importance="normal" Text="Added assembly reference:  %(_ExternalReference.Identity)" />
 
-    </Target>
+	</Target>
 
-    <!--
+	<!--
     ============================================================
               CompileExternalProjects
-              
-    Compiles the external projects if needed, based Inputs/Outputs 
-    dependency checking. 
-    
-    Note that this means that in order for the external project to 
-    be recompiled, its project file must be changed or its output 
-    must not exist (or be outdated). Changes in external project 
-    source file are not enough. This, however, would typically 
-    be done in the "Full" solution, where this behavior does not 
-    apply at all since the projects won't be external.
+			  
+	Compiles the external projects if needed, based Inputs/Outputs 
+	dependency checking. 
+	
+	Note that this means that in order for the external project to 
+	be recompiled, its project file must be changed or its output 
+	must not exist (or be outdated). Changes in external project 
+	source file are not enough. This, however, would typically 
+	be done in the "Full" solution, where this behavior does not 
+	apply at all since the projects won't be external.
     ============================================================
-    -->
-    <Target Name="SmartReferences:CompileExternalProjects"
-            Condition="'@(_ExternalProject)' != ''"
-            Inputs="@(_ExternalProject)"
-            Outputs="@(_ExternalProject -> '%(TargetPath)')">
-        <!-- NOTE: we pass on our own configuration, but let the platform unspecified on 
-             purpose, since we typically want the default platform of the referenced project 
-             to be built.
-             TODO: if this heuristic proves problematic, we might allow metadata at the <ProjectReference>
-             level to drive that (since we won't have solution configurations to do so).
-        -->
-        <MSBuild Projects="%(_ExternalProject.FullPath)"
-                 Properties="Configuration=$(Configuration)"
-                 Targets="Build"
-                 Condition="!Exists('%(_ExternalProject.TargetPath)')"/>
-    </Target>
+	-->
+	<Target Name="SmartReferences:CompileExternalProjects"
+			Condition="'@(_ExternalProject)' != ''"
+			Inputs="@(_ExternalProject)"
+			Outputs="@(_ExternalProject -> '%(TargetPath)')">
+		<!-- NOTE: we pass on our own configuration, but let the platform unspecified on 
+			 purpose, since we typically want the default platform of the referenced project 
+			 to be built.
+			 TODO: if this heuristic proves problematic, we might allow metadata at the <ProjectReference>
+			 level to drive that (since we won't have solution configurations to do so).
+		-->
+		<MSBuild Projects="%(_ExternalProject.FullPath)"
+				 Properties="Configuration=$(Configuration)"
+				 Targets="Build"
+				 Condition="!Exists('%(_ExternalProject.TargetPath)')"/>
+	</Target>
 
-    <!--
+	<!--
     ============================================================
               FixupProjectReferences
-              
-    Removes the resolved external projects and adds corresponding
-    assembly references.
+			  
+	Removes the resolved external projects and adds corresponding
+	assembly references.
     ============================================================
-    -->
-    <Target Name="SmartReferences:FixupProjectReferences"
-            Condition="'@(_ExternalProject)' != ''">
+	-->
+	<Target Name="SmartReferences:FixupProjectReferences"
+			Condition="'@(_ExternalProject)' != ''">
 
-        <ItemGroup>
-            <ProjectReference Remove="%(_ExternalProject.OriginalIdentity)" />
-            <Reference Include="@(_ExternalReference)" />
-        </ItemGroup>
+		<ItemGroup>
+			<ProjectReference Remove="%(_ExternalProject.OriginalIdentity)" />
+			<Reference Include="@(_ExternalReference)" />
+		</ItemGroup>
 
-    </Target>
+	</Target>
 
-    <!--
+	<!--
     =====================================================================
               FailIfExternalProjectMissing
 
-    Fails the build if there are project references that are not in the 
-    solution but do not exist on disk.
+	Fails the build if there are project references that are not in the 
+	solution but do not exist on disk.
     =====================================================================
-    -->
-    <Target Name="SmartReferences:FailIfExternalProjectMissing" Condition="'@(_ExternalProject)' != ''">
+	-->
+	<Target Name="SmartReferences:FailIfExternalProjectMissing" Condition="'@(_ExternalProject)' != ''">
 
-        <Error Condition="!Exists('%(_ExternalProject.Identity)')"
-               Text="Project reference '%(_ExternalProject.OriginalIdentity)' was not found." />
+		<Error Condition="!Exists('%(_ExternalProject.Identity)')"
+			   Text="Project reference '%(_ExternalProject.OriginalIdentity)' was not found." />
 
-    </Target>
+	</Target>
 
-    <!--
+	<!--
     =====================================================================
               GetExternalProjectMetadata
 
-    This target batches so that a single project is processed at a time.
-    We need to do this because all the project paths are relative to the 
-    loaded project location, which in our MSBuild "inheritance" case is 
-    this file itself, NOT the external project.
+	This target batches so that a single project is processed at a time.
+	We need to do this because all the project paths are relative to the 
+	loaded project location, which in our MSBuild "inheritance" case is 
+	this file itself, NOT the external project.
     =====================================================================
-    -->
-    <Target Name="SmartReferences:GetExternalProjectMetadata"
-            Condition="'@(_ExternalProject)' != ''"
-            Inputs="@(_ExternalProject)"
-            Outputs="%(Identity)-BATCH">
+	-->
+	<Target Name="SmartReferences:GetExternalProjectMetadata"
+			Condition="'@(_ExternalProject)' != ''"
+			Inputs="@(_ExternalProject)"
+			Outputs="%(Identity)-BATCH">
 
-        <PropertyGroup>
-            <ProjectDir>%(_ExternalProject.ProjectDir)</ProjectDir>
-        </PropertyGroup>
+		<PropertyGroup>
+			<ProjectDir>%(_ExternalProject.ProjectDir)</ProjectDir>
+		</PropertyGroup>
 
-        <MSBuild Projects="$(MSBuildThisFileFullPath)"
-                 Properties="Configuration=$(Configuration);_ExternalProjectPath=%(_ExternalProject.FullPath)"
-                 Targets="SmartReferences:GetOutputPath"
-                 Condition="Exists(@(_ExternalProject))">
-            <Output ItemName="_ExternalReference" TaskParameter="TargetOutputs" />
-        </MSBuild>
+		<MSBuild Projects="$(MSBuildThisFileFullPath)"
+				 Properties="Configuration=$(Configuration);_ExternalProjectPath=%(_ExternalProject.FullPath)"
+				 Targets="SmartReferences:GetOutputPath"
+				 Condition="Exists(@(_ExternalProject))">
+			<Output ItemName="_ExternalReference" TaskParameter="TargetOutputs" />
+		</MSBuild>
 
-        <ItemGroup Condition="Exists(@(_ExternalProject))">
-            <!-- This item list is used to remove project references later -->
-            <_ExternalProject>
-                <!-- This metadata is used for the Inputs/Outputs dependency checking -->
-                <TargetPath>$(ProjectDir)%(_ExternalReference.RelativePath)</TargetPath>
-            </_ExternalProject>
-            <!-- This item list is used to add the new assembly references -->
-            <_ExternalReference>
-                <!-- HintPath calculated from the target output of the external project -->
-                <HintPath>$(ProjectDir)%(_ExternalReference.RelativePath)</HintPath>
-            </_ExternalReference>
-        </ItemGroup>
+		<ItemGroup Condition="Exists(@(_ExternalProject))">
+			<!-- This item list is used to remove project references later -->
+			<_ExternalProject>
+				<!-- This metadata is used for the Inputs/Outputs dependency checking -->
+				<TargetPath>$(ProjectDir)%(_ExternalReference.RelativePath)</TargetPath>
+			</_ExternalProject>
+			<!-- This item list is used to add the new assembly references -->
+			<_ExternalReference>
+				<!-- HintPath calculated from the target output of the external project -->
+				<HintPath>$(ProjectDir)%(_ExternalReference.RelativePath)</HintPath>
+			</_ExternalReference>
+		</ItemGroup>
 
-    </Target>
+	</Target>
 
-    <!--
+	<!--
     =====================================================================
               GetOutputPath
 
-    This conditional import as well as the following target implement the 
-    project inheritance that allows us to invoke targets and retrieve 
-    properties and items from the context of the external project.
+	This conditional import as well as the following target implement the 
+	project inheritance that allows us to invoke targets and retrieve 
+	properties and items from the context of the external project.
     =====================================================================
-    -->
-    <Import Project="$(_ExternalProjectPath)" Condition="$(_ExternalProjectPath) != ''" />
+	-->
+	<Import Project="$(_ExternalProjectPath)" Condition="$(_ExternalProjectPath) != ''" />
 
-    <Target Name="SmartReferences:GetOutputPath" Outputs="@(TargetAssembly)" Condition="$(_ExternalProjectPath) != ''">
+	<Target Name="SmartReferences:GetOutputPath" Outputs="@(TargetAssembly)" Condition="$(_ExternalProjectPath) != ''">
 
-        <ItemGroup>
-            <TargetAssembly Include="$(TargetName)">
-                <RelativePath>$(OutDir)$(TargetFileName)</RelativePath>
-            </TargetAssembly>
-        </ItemGroup>
+		<ItemGroup>
+			<TargetAssembly Include="$(TargetName)">
+				<RelativePath>$(OutDir)$(TargetFileName)</RelativePath>
+			</TargetAssembly>
+		</ItemGroup>
 
-        <Message Importance="low" Text="Retrieved target assembly info: %(TargetAssembly.Identity) - %(TargetAssembly.RelativePath)" />
-    </Target>
+		<Message Importance="low" Text="Retrieved target assembly info: %(TargetAssembly.Identity) - %(TargetAssembly.RelativePath)" />
+	</Target>
 
-    <!--
+	<!--
     ============================================================
                  GenerateSolutionProject
-                 
-    Generates a temporary MSBuild representation of the current 
-    solution file. It will be regenerated only when the solution 
-    itself changes.
+				 
+	Generates a temporary MSBuild representation of the current 
+	solution file. It will be regenerated only when the solution 
+	itself changes.
     ============================================================
-    -->
-    <Target Name="SmartReferences:GenerateSolutionProject"
-            Condition="'@(ProjectReference)' != ''"
-            Inputs="$(SolutionPath)"
-            Outputs="$(_SolutionProject)">
+	-->
+	<Target Name="SmartReferences:GenerateSolutionProject"
+			Condition="'@(ProjectReference)' != ''"
+			Inputs="$(SolutionPath)"
+			Outputs="$(_SolutionProject)">
 
-        <Message Text="Temporary solution project out of date. Regenerating." />
+		<Message Text="Temporary solution project out of date. Regenerating." />
 
-        <GenerateSolutionProject SolutionPath="$(SolutionPath)" TargetFile="$(_SolutionProject)" />
+		<GenerateSolutionProject SolutionPath="$(SolutionPath)" TargetFile="$(_SolutionProject)" />
 
-    </Target>
+	</Target>
 
-    <!--
+	<!--
     =================================================================
                  GetExternalProjects
-                 
-    This target loads the serialized MSBuild version of the solution 
-    and creates a list of project references in the calling project 
-    which do not exist in the solution. Those would be the candidates
-    for external processing.
-    
-    We track the original identity of the referenced project so that
-    we know also what projects to remove.
+				 
+	This target loads the serialized MSBuild version of the solution 
+	and creates a list of project references in the calling project 
+	which do not exist in the solution. Those would be the candidates
+	for external processing.
+	
+	We track the original identity of the referenced project so that
+	we know also what projects to remove.
     =================================================================
-    -->
-    <Target Name="SmartReferences:GetExternalProjects"
-            Condition="'@(ProjectReference)' != ''">
+	-->
+	<Target Name="SmartReferences:GetExternalProjects"
+			Condition="'@(ProjectReference)' != ''">
 
-        <MSBuild Projects="$(MSBuildThisFileFullPath)"
-                 Properties="_SolutionProject=$(_SolutionProject);LoadSolutionProject=true"
-                 Targets="SmartReferences:GetSolutionProjects">
-            <Output ItemName="_ProjectInSolution" TaskParameter="TargetOutputs" />
-        </MSBuild>
+		<MSBuild Projects="$(MSBuildThisFileFullPath)"
+				 Properties="_SolutionProject=$(_SolutionProject);LoadSolutionProject=true"
+				 Targets="SmartReferences:GetSolutionProjects">
+			<Output ItemName="_ProjectInSolution" TaskParameter="TargetOutputs" />
+		</MSBuild>
 
-        <CreateItem Include="%(ProjectReference.FullPath)"
-                    Exclude="@(_ProjectInSolution)"
-                    AdditionalMetadata="OriginalIdentity=%(ProjectReference.Identity);ProjectDir=$([System.IO.Path]::GetDirectoryName('%(ProjectReference.FullPath)'))\">
-            <Output ItemName="_ExternalProject" TaskParameter="Include" />
-        </CreateItem>
+		<CreateItem Include="%(ProjectReference.FullPath)"
+					Exclude="@(_ProjectInSolution)"
+					AdditionalMetadata="OriginalIdentity=%(ProjectReference.Identity);ProjectDir=$([System.IO.Path]::GetDirectoryName('%(ProjectReference.FullPath)'))\">
+			<Output ItemName="_ExternalProject" TaskParameter="Include" />
+		</CreateItem>
 
-        <Message Text="Found external project %(_ExternalProject.OriginalIdentity)"
-                 Importance="normal"
-                 Condition="'@(_ExternalProject)' != ''" />
-    </Target>
+		<Message Text="Found external project %(_ExternalProject.OriginalIdentity)"
+				 Importance="normal"
+				 Condition="'@(_ExternalProject)' != ''" />
+	</Target>
 
-    <!--
+	<!--
     =================================================================
                  GetSolutionProjects
-                 
-    This conditional imports and following target implement the 
-    solution inheritance so we can invoke and retrieve items and 
-    properties from it.
+				 
+	This conditional imports and following target implement the 
+	solution inheritance so we can invoke and retrieve items and 
+	properties from it.
     =================================================================
-    -->
-    <Import Project="$(_SolutionProject)" Condition="'$(LoadSolutionProject)' == 'true'" />
+	-->
+	<Import Project="$(_SolutionProject)" Condition="'$(LoadSolutionProject)' == 'true'" />
 
-    <Target Name="SmartReferences:GetSolutionProjects"
-            Outputs="@(_SolutionProjectProjects -> '$(SolutionDir)%(Identity)')" />
+	<Target Name="SmartReferences:GetSolutionProjects"
+			Outputs="@(_SolutionProjectProjects -> '$(SolutionDir)%(Identity)')" />
 
-    <Import Project="SmartReferences.tasks" />
+	<Import Project="SmartReferences.tasks" />
 </Project>
