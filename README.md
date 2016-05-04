@@ -4,7 +4,6 @@
 Smarter project and assembly references with MSBuild
 
 [![Build status](https://img.shields.io/appveyor/ci/kzu/SmartReferences.svg)](https://ci.appveyor.com/project/kzu/SmartReferences)
-[![NuGet downloads](https://img.shields.io/nuget/dt/SmartReferences.svg)](https://www.nuget.org/packages/SmartReferences)
 [![Version](https://img.shields.io/nuget/v/SmartReferences.svg)](https://www.nuget.org/packages/SmartReferences)
 
 Sometimes the simple act of adding a project or assembly reference results in multiple subsequent attempts to fix the build because of the myriad indirect references that those depend on in turn, and which you are forced to add. Some other times, you just wish you were able to remove all those external projects that clutter the solution and slow down VS, but you need the project references for those tough debugging times. Welcome to Smarter Project References!
